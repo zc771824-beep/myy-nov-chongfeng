@@ -300,7 +300,7 @@ document.getElementById('kpis').innerHTML = `
  <div class="kpi">
    <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
    <div class="val">${goalPct.toFixed(1)}<small>%</small></div>
-   <div class="foot">目标 <b>${wan(goalTotal)}</b> · 已完成 <b>${wan(grandTotal)}</b></div>
+   <div class="foot">目标 <b>${wan(goalTotal)}</b> · 已完成 <b>${wan(grandTotal)}</b> · 还差 <b style="color:var(--today)">${wan(goalTotal-grandTotal)}</b></div>
    <div class="bar-mini"><i style="width:${Math.min(goalPct,100).toFixed(1)}%"></i></div>
  </div>`;
 
@@ -372,7 +372,7 @@ function renderRank(){
   rank(document.getElementById('cityRank'), D.by_city, null, D.city_targets);
   rank(document.getElementById('supRank'), D.by_sup, 10);
   const ctg = D.city_targets||{};
-  if(ctg.total) document.getElementById('cityGoal').textContent = '月目标 ' + wan(ctg.total) + ' · 已完成 ' + (grandTotal/ctg.total*100).toFixed(1) + '%';
+  if(ctg.total) document.getElementById('cityGoal').textContent = '月目标 ' + wan(ctg.total) + ' · 已完成 ' + (grandTotal/ctg.total*100).toFixed(1) + '% · 还差 ' + wan(ctg.total-grandTotal);
 }
 renderRank();
 
