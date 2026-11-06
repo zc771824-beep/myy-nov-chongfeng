@@ -45,7 +45,7 @@ h1{font-size:23px;font-weight:700;letter-spacing:-.3px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ---------- kpi ---------- */
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:14px}
 .kpi{
   background:var(--card);border-radius:var(--radius);padding:20px 22px 18px;
   box-shadow:var(--shadow);position:relative;overflow:hidden;
@@ -273,6 +273,8 @@ const K = D.kpi;
 const coverPct = (K.month_stores / D.meta.base_total * 100);
 const todayShare = (K.today_total / grandTotal * 100);
 const avgPerStore = K.month_total / K.month_stores;
+const goalTotal = (D.city_targets && D.city_targets.total) || 0;
+const goalPct = goalTotal ? (grandTotal/goalTotal*100) : 0;
 document.getElementById('kpis').innerHTML = `
  <div class="kpi">
    <div class="lab">本月已冲锋 <span class="tag">W1–W5</span></div>
@@ -294,6 +296,12 @@ document.getElementById('kpis').innerHTML = `
    <div class="lab">今日冲锋门店 <span class="tag">当日</span></div>
    <div class="val" style="color:var(--today)">${K.today_stores}<small>家</small></div>
    <div class="foot">场均 <b>${fmt(K.today_total/K.today_stores)}</b> · 本月场均 <b>${fmt(avgPerStore)}</b></div>
+ </div>
+ <div class="kpi">
+   <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
+   <div class="val">${goalPct.toFixed(1)}<small>%</small></div>
+   <div class="foot">目标 <b>${wan(goalTotal)}</b> · 已完成 <b>${wan(grandTotal)}</b></div>
+   <div class="bar-mini"><i style="width:${Math.min(goalPct,100).toFixed(1)}%"></i></div>
  </div>`;
 
 /* ---- 周节奏 ---- */
