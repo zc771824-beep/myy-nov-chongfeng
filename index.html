@@ -107,6 +107,7 @@ h1{font-size:23px;font-weight:700;letter-spacing:-.3px}
 .rank .vv{font-size:12.5px;font-weight:650;text-align:right;white-space:nowrap}
 .rank .vv em{font-style:normal;font-size:10.5px;color:var(--today);margin-left:3px}
 .rank .vv em.pc{color:#0D7A6F;margin-left:6px;font-weight:650}
+.rank .vv em.diff{display:block;font-style:normal;font-size:10px;color:var(--faint);margin-top:2px;font-weight:600;white-space:nowrap}
 .rank .nm .st{color:var(--faint);font-size:10.5px;margin-left:4px}
 
 /* ---------- table ---------- */
@@ -329,6 +330,7 @@ let view = 'all';
 function rank(el, data, top, targets){
   let list = data.slice(0, top||99);
   const pct = x => x.target ? `<em class="pc">${(x.total/x.target*100).toFixed(1)}%</em>` : '';
+  const diff = x => x.target ? `<em class="diff">还差 ${wan(x.target-x.total)}</em>` : '';
   if(targets){
     list = Object.keys(targets).filter(k=>k!=='total').map(k=>{
       const d = data.find(x=>x.name===k) || {name:k, month:0, today:0, total:0, month_stores:0, today_stores:0};
@@ -344,7 +346,7 @@ function rank(el, data, top, targets){
       <div class="rank">
         <div class="nm" title="${esc(x.name)}">${esc(x.name)}<span class="st">${x.month_stores}家</span></div>
         <div class="track"><div class="m" style="width:${x.month/mx*100}%"></div></div>
-        <div class="vv">${wan(x.month)}${pct(x)}</div>
+        <div class="vv">${wan(x.month)}${pct(x)}${diff(x)}</div>
       </div>`).join('');
   } else if(view==='today'){
     const mx = Math.max(...list.map(x=>x.today));
@@ -352,7 +354,7 @@ function rank(el, data, top, targets){
       <div class="rank">
         <div class="nm" title="${esc(x.name)}">${esc(x.name)}<span class="st">${x.today_stores}家</span></div>
         <div class="track"><div class="t" style="width:${x.today/mx*100}%"></div></div>
-        <div class="vv" style="color:var(--today)">${wan(x.today)}${pct(x)}</div>
+        <div class="vv" style="color:var(--today)">${wan(x.today)}${pct(x)}${diff(x)}</div>
       </div>`).join('');
   } else {
     const mx = Math.max(...list.map(x=>x.total));
@@ -363,7 +365,7 @@ function rank(el, data, top, targets){
           <div class="m" style="width:${x.month/mx*100}%"></div>
           <div class="t" style="width:${x.today/mx*100}%"></div>
         </div>
-        <div class="vv">${wan(x.total)}${x.today>0?`<em>+${wan(x.today)}</em>`:''}${pct(x)}</div>
+        <div class="vv">${wan(x.total)}${x.today>0?`<em>+${wan(x.today)}</em>`:''}${pct(x)}${diff(x)}</div>
       </div>`).join('');
   }
   el.innerHTML = html;
