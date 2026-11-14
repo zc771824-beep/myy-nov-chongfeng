@@ -179,6 +179,8 @@ tr.sumrow td.hl{background:#E3F0ED !important}
   .search{width:100%}
   .thead{align-items:stretch;flex-direction:column}
 }
+.btn3d{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.btn3d:hover{background:var(--today);color:#fff}
 </style>
 </head>
 <body>
@@ -299,6 +301,7 @@ document.getElementById('kpis').innerHTML = `
    <div class="lab">今日已冲锋 <span class="tag">${D.meta.today.slice(5)}</span></div>
    <div class="val" style="color:var(--today)">${fmt(K.today_total)}</div>
    <div class="foot">实时录入 <b>${K.today_rows}</b> 笔 · 占本月 <b>${todayShare.toFixed(1)}%</b></div>
+   <button id="btn3d" class="btn3d" onclick="toggle3d()" style="display:none">近三日冲锋</button>
  </div>
  <div class="kpi t">
    <div class="lab">今日冲锋门店 <span class="tag">当日</span></div>
@@ -533,7 +536,7 @@ renderTable();
 /* ---- 近三日临时汇总（下次同步 temp3d 移除后自动隐藏） ---- */
 if (D.temp3d) {
   const t = D.temp3d;
-  document.getElementById('temp3dCard').style.display = '';
+  document.getElementById('btn3d').style.display = '';
   const dayCards = t.days.map(d=>`
     <div class="kpi">
       <div class="lab">${d.date} <span class="tag">当日</span></div>
@@ -576,6 +579,15 @@ if (D.temp3d) {
     </div>`;
 }
 
+/* ---- 近三日按钮切换 ---- */
+function toggle3d(){
+  const card = document.getElementById('temp3dCard');
+  const btn = document.getElementById('btn3d');
+  if(!card) return;
+  const show = card.style.display === 'none';
+  card.style.display = show ? '' : 'none';
+  if(btn) btn.textContent = show ? '近三日冲锋 ▴' : '近三日冲锋 ▾';
+}
 </script>
 </body>
 </html>
