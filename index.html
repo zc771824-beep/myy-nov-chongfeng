@@ -211,8 +211,8 @@ tr.sumrow td.hl{background:#E3F0ED !important}
 <section class="kpis" id="kpis"></section>
 
 <div class="card" id="temp3dCard" style="display:none;margin-bottom:14px;border:1px solid var(--brand-mid)">
-  <h2>近三日冲锋汇总 <span class="hint">11-12 ~ 11-14 · 临时展示，下次更新自动移除</span></h2>
-  <div class="note">口径：当日实付≥900、按券码去重；三日合计 = 12 + 13 + 14 号实付金额</div>
+  <h2>近三日冲锋汇总 <span class="hint" id="r3dRange"></span></h2>
+  <div class="note">口径：当日实付≥900、按券码去重；近三日 = 今日 + 昨日 + 前日（含今日实时）</div>
   <div id="temp3dBody"></div>
 </div>
 
@@ -534,9 +534,11 @@ document.getElementById('viewSeg').addEventListener('click', e=>{
 renderTable();
 
 /* ---- 近三日临时汇总（下次同步 temp3d 移除后自动隐藏） ---- */
-if (D.temp3d) {
-  const t = D.temp3d;
+/* ---- 近三日汇总（常驻，含今日实时） ---- */
+if (D.recent3d) {
+  const t = D.recent3d;
   document.getElementById('btn3d').style.display = '';
+  document.getElementById('r3dRange').textContent = t.days[0].date + ' ~ ' + t.days[t.days.length-1].date;
   const dayCards = t.days.map(d=>`
     <div class="kpi">
       <div class="lab">${d.date} <span class="tag">当日</span></div>
@@ -549,6 +551,13 @@ if (D.temp3d) {
       <div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
       <div class="track"><div class="m" style="width:${c.amount/cmax*100}%"></div></div>
       <div class="vv">${wan(c.amount)}</div>
+    </div>`).join('');
+  const smax = Math.max(...t.by_sup.map(s=>s.amount));
+  const supRows = t.by_sup.map(s=>`
+    <div class="rank">
+      <div class="nm" title="${esc(s.name)}">${esc(s.name)}</div>
+      <div class="track"><div class="m" style="width:${s.amount/smax*100}%"></div></div>
+      <div class="vv">${wan(s.amount)}</div>
     </div>`).join('');
   const topRows = t.top_stores.map((s,i)=>`
     <tr>
@@ -564,18 +573,22 @@ if (D.temp3d) {
       <div class="kpi t">
         <div class="lab">三日合计 <span class="tag">汇总</span></div>
         <div class="val">${fmt(t.total)}</div>
-        <div class="foot">12 ~ 14 日累计实付</div>
+        <div class="foot">近三日累计实付</div>
       </div>
     </div>
-    <div class="grid g2" style="margin-bottom:0">
+    <div class="grid g2" style="margin-bottom:14px">
       <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
-        <h2>城市分布 <span class="hint">三日合计</span></h2>
+        <h2>城市分布 <span class="hint">近三日</span></h2>
         <div class="ranks">${cityRows}</div>
       </div>
       <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
-        <h2>门店前10 <span class="hint">三日合计</span></h2>
-        <div class="tw"><table style="min-width:0"><thead><tr><th></th><th>门店</th><th>城市</th><th class="r">金额</th><th class="r">笔数</th></tr></thead><tbody>${topRows}</tbody></table></div>
+        <h2>督导排行 <span class="hint">近三日</span></h2>
+        <div class="ranks">${supRows}</div>
       </div>
+    </div>
+    <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
+      <h2>门店前10 <span class="hint">近三日</span></h2>
+      <div class="tw"><table style="min-width:0"><thead><tr><th></th><th>门店</th><th>城市</th><th class="r">金额</th><th class="r">笔数</th></tr></thead><tbody>${topRows}</tbody></table></div>
     </div>`;
 }
 
