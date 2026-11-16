@@ -561,11 +561,12 @@ function selectedItems(){
 
 function updateDayCard(){
   const n = selDates.size;
+  const f = s => { const p=s.split('/'); return (+p[0])+'/'+(+p[1]); };
   let dayTagText = '—';
-  if(n===1){ const p=[...selDates][0].split('/'); dayTagText = (+p[0])+'月'+(+p[1])+'号'; }
+  if(n===1){ dayTagText = f([...selDates][0]); }
   else if(n>1){
     const arr=[...selDates].map(s=>{const p=s.split('/');return {m:+p[0],d:+p[1]};}).sort((a,b)=>a.m-b.m||a.d-b.d);
-    dayTagText = arr[0].m+'月'+arr[0].d+'号-'+arr[arr.length-1].m+'月'+arr[arr.length-1].d+'号';
+    dayTagText = arr[0].m+'/'+arr[0].d+'-'+arr[arr.length-1].m+'/'+arr[arr.length-1].d;
   }
   document.getElementById('dayTag').textContent = dayTagText;
   const items = selectedItems();
