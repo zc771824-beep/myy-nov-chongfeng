@@ -45,13 +45,14 @@ h1{font-size:23px;font-weight:700;letter-spacing:-.3px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ---------- kpi ---------- */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:14px}
 .kpi{
   background:var(--card);border-radius:var(--radius);padding:20px 22px 18px;
   box-shadow:var(--shadow);position:relative;overflow:hidden;
 }
 .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
 .kpi.t::before{background:var(--today)}
+.kpi.y::before{background:var(--faint)}
 .kpi .lab{font-size:12.5px;color:var(--sub);font-weight:500;display:flex;align-items:center;gap:7px}
 .kpi .lab .tag{font-size:10.5px;padding:1px 6px;border-radius:5px;background:var(--brand-soft);color:var(--brand);font-weight:600}
 .kpi.t .lab .tag{background:var(--today-soft);color:var(--today)}
@@ -308,6 +309,11 @@ document.getElementById('kpis').innerHTML = `
    <div class="val" style="color:var(--today)">${K.today_stores}<small>家</small></div>
    <div class="foot">场均 <b>${fmt(K.today_total/K.today_stores)}</b> · 本月场均 <b>${fmt(avgPerStore)}</b></div>
  </div>
+ <div class="kpi y">
+   <div class="lab">昨日已冲锋 <span class="tag">${K.yesterday_date||''}</span></div>
+   <div class="val">${fmt(K.yesterday_total||0)}</div>
+   <div class="foot">录入 <b>${K.yesterday_rows||0}</b> 笔 · <b>${K.yesterday_stores||0}</b> 家门店</div>
+ </div>
  <div class="kpi">
    <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
    <div class="val">${goalPct.toFixed(1)}<small>%</small></div>
@@ -497,7 +503,7 @@ function highlightCol(){
 
 function updateKpiHighlight(){
   document.querySelectorAll('#kpis .kpi').forEach((c,i)=>{
-    const on = (view==='month' && i<2) || (view==='today' && i>=2);
+    const on = (view==='month' && i<2) || (view==='today' && (i===2 || i===3));
     c.classList.toggle('active', on);
   });
 }
