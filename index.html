@@ -179,9 +179,13 @@ tr.sumrow td.hl{background:#E3F0ED !important}
   .search{width:100%}
   .thead{align-items:stretch;flex-direction:column}
 }
-.btn3d{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
-.btn3d:hover{background:var(--today);color:#fff}
-.day-sel{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;outline:none}
+.date-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+.dchip{font-size:12px;padding:6px 11px;border-radius:8px;background:#F1F5F4;color:var(--ink2);cursor:pointer;user-select:none;font-variant-numeric:tabular-nums;border:1px solid transparent;transition:.12s}
+.dchip:hover{border-color:var(--brand-mid)}
+.dchip.on{background:var(--today);color:#fff;border-color:var(--today);font-weight:650}
+.df-actions{display:flex;gap:6px}
+.df-actions button{border:0;background:#EFF4F3;padding:6px 13px;border-radius:8px;font-size:12px;color:var(--sub);cursor:pointer;font-weight:550;font-family:inherit;transition:.12s}
+.df-actions button:hover{color:var(--brand)}
 </style>
 </head>
 <body>
@@ -211,10 +215,16 @@ tr.sumrow td.hl{background:#E3F0ED !important}
 
 <section class="kpis" id="kpis"></section>
 
-<div class="card" id="temp3dCard" style="display:none;margin-bottom:14px;border:1px solid var(--brand-mid)">
-  <h2>近三日冲锋汇总 <span class="hint" id="r3dRange"></span></h2>
-  <div class="note">口径：当日实付≥900、按券码去重；近三日 = 今日 + 昨日 + 前日（含今日实时）</div>
-  <div id="temp3dBody"></div>
+<div class="card" id="dateFilterCard" style="margin-bottom:14px;border:1px solid var(--brand-mid)">
+  <div class="thead">
+    <h2>按日期多选 <span class="hint">点击日期切换，下方城市/督导/门店实时联动</span></h2>
+    <div class="df-actions">
+      <button id="dfAll">全选</button>
+      <button id="dfToday">今日</button>
+      <button id="dfClear">清除</button>
+    </div>
+  </div>
+  <div class="date-chips" id="dateChips"></div>
 </div>
 
 
@@ -283,7 +293,6 @@ document.getElementById('hTime').textContent = D.meta.updated;
 const K = D.kpi;
 const coverPct = (K.month_stores / D.meta.base_total * 100);
 const todayShare = (K.today_total / grandTotal * 100);
-const yesterdayShare = ((K.yesterday_total||0) / grandTotal * 100);
 const avgPerStore = K.month_total / K.month_stores;
 const goalTotal = (D.city_targets && D.city_targets.total) || 0;
 const goalPct = goalTotal ? (grandTotal/goalTotal*100) : 0;
@@ -303,7 +312,6 @@ document.getElementById('kpis').innerHTML = `
    <div class="lab">今日已冲锋 <span class="tag">${D.meta.today.slice(5)}</span></div>
    <div class="val" style="color:var(--today)">${fmt(K.today_total)}</div>
    <div class="foot">实时录入 <b>${K.today_rows}</b> 笔 · 占本月 <b>${todayShare.toFixed(1)}%</b></div>
-   <button id="btn3d" class="btn3d" onclick="toggle3d()" style="display:none">近三日冲锋</button>
  </div>
  <div class="kpi t">
    <div class="lab">今日冲锋门店 <span class="tag">当日</span></div>
@@ -314,7 +322,6 @@ document.getElementById('kpis').innerHTML = `
    <div class="lab">每日冲锋 <span class="tag" id="dayTag">—</span></div>
    <div class="val" style="color:var(--today)" id="dayVal">—</div>
    <div class="foot" id="dayFoot">—</div>
-   <select id="daySel" class="day-sel" onchange="pickDay()"></select>
  </div>
  <div class="kpi">
    <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
@@ -541,93 +548,97 @@ document.getElementById('viewSeg').addEventListener('click', e=>{
 
 renderTable();
 
-/* ---- 近三日临时汇总（下次同步 temp3d 移除后自动隐藏） ---- */
-/* ---- 近三日汇总（常驻，含今日实时） ---- */
-if (D.recent3d) {
-  const t = D.recent3d;
-  document.getElementById('btn3d').style.display = '';
-  document.getElementById('r3dRange').textContent = t.days[0].date + ' ~ ' + t.days[t.days.length-1].date;
-  const dayCards = t.days.map(d=>`
-    <div class="kpi">
-      <div class="lab">${d.date} <span class="tag">当日</span></div>
-      <div class="val">${fmt(d.amount)}</div>
-      <div class="foot"><b>${d.cnt}</b> 笔 · <b>${d.stores}</b> 家门店</div>
-    </div>`).join('');
-  const cmax = Math.max(...t.by_city.map(c=>c.amount));
-  const cityRows = t.by_city.map(c=>`
-    <div class="rank">
-      <div class="nm" title="${esc(c.name)}">${esc(c.name)}</div>
-      <div class="track"><div class="m" style="width:${c.amount/cmax*100}%"></div></div>
-      <div class="vv">${wan(c.amount)}</div>
-    </div>`).join('');
-  const smax = Math.max(...t.by_sup.map(s=>s.amount));
-  const supRows = t.by_sup.map(s=>`
-    <div class="rank">
-      <div class="nm" title="${esc(s.name)}">${esc(s.name)}</div>
-      <div class="track"><div class="m" style="width:${s.amount/smax*100}%"></div></div>
-      <div class="vv">${wan(s.amount)}</div>
-    </div>`).join('');
-  const topRows = t.top_stores.map((s,i)=>`
-    <tr>
-      <td class="nm">${i+1}</td>
-      <td class="nm">${esc(s.store)}</td>
-      <td>${esc(s.city)}</td>
-      <td class="r money">${fmt(s.amount)}</td>
-      <td class="r">${s.cnt}笔</td>
-    </tr>`).join('');
-  document.getElementById('temp3dBody').innerHTML = `
-    <div class="kpis" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px">
-      ${dayCards}
-      <div class="kpi t">
-        <div class="lab">三日合计 <span class="tag">汇总</span></div>
-        <div class="val">${fmt(t.total)}</div>
-        <div class="foot">近三日累计实付</div>
-      </div>
-    </div>
-    <div class="grid g2" style="margin-bottom:14px">
-      <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
-        <h2>城市分布 <span class="hint">近三日</span></h2>
-        <div class="ranks">${cityRows}</div>
-      </div>
-      <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
-        <h2>督导排行 <span class="hint">近三日</span></h2>
-        <div class="ranks">${supRows}</div>
-      </div>
-    </div>
-    <div class="card" style="box-shadow:none;border:1px solid var(--line);padding:16px">
-      <h2>门店前10 <span class="hint">近三日</span></h2>
-      <div class="tw"><table style="min-width:0"><thead><tr><th></th><th>门店</th><th>城市</th><th class="r">金额</th><th class="r">笔数</th></tr></thead><tbody>${topRows}</tbody></table></div>
-    </div>`;
+/* ---- 按日期多选 + 城市/督导/门店联动 ---- */
+let selDates = new Set();
+const TODAY_MM = D.meta.today.slice(5).replace('-', '/');
+const allDates = D.daily.map(d=>d.date);
+
+function selectedItems(){
+  return D.items.filter(x=>selDates.has(x.date));
 }
 
-/* ---- 近三日按钮切换 ---- */
-function toggle3d(){
-  const card = document.getElementById('temp3dCard');
-  const btn = document.getElementById('btn3d');
-  if(!card) return;
-  const show = card.style.display === 'none';
-  card.style.display = show ? '' : 'none';
-  if(btn) btn.textContent = show ? '近三日冲锋 ▴' : '近三日冲锋 ▾';
+function updateDayCard(){
+  const n = selDates.size;
+  document.getElementById('dayTag').textContent = n ? ('已选' + n + '天') : '—';
+  const items = selectedItems();
+  const amt = items.reduce((s,x)=>s+x.amount,0);
+  document.getElementById('dayVal').textContent = fmt(amt);
+  const share = grandTotal ? (amt/grandTotal*100) : 0;
+  document.getElementById('dayFoot').innerHTML = '合计 <b>' + items.length + '</b> 笔 · 占本月 <b>' + share.toFixed(1) + '%</b>';
 }
 
-/* ---- 每日冲锋：选日期查看 ---- */
-if (D.daily && D.daily.length) {
-  const daySel = document.getElementById('daySel');
-  const sorted = [...D.daily].sort((a,b)=> a.date.localeCompare(b.date));
-  daySel.innerHTML = sorted.map(d=>`<option value="${d.date}">${d.date}</option>`).join('');
-  const yest = (K.yesterday_date||'') || sorted[sorted.length-1].date;
-  daySel.value = sorted.some(d=>d.date===yest) ? yest : sorted[sorted.length-1].date;
-  pickDay();
+function renderDateChips(){
+  document.getElementById('dateChips').innerHTML = allDates.map(d=>
+    '<span class="dchip ' + (selDates.has(d)?'on':'') + '" data-d="' + d + '">' + d + '</span>').join('');
+  updateDayCard();
+  renderFiltered();
 }
-function pickDay(){
-  const daySel = document.getElementById('daySel');
-  const it = D.daily.find(x=>x.date===daySel.value);
-  if(!it) return;
-  document.getElementById('dayTag').textContent = it.date;
-  document.getElementById('dayVal').textContent = fmt(it.amount);
-  const share = grandTotal ? (it.amount/grandTotal*100) : 0;
-  document.getElementById('dayFoot').innerHTML = `录入 <b>${it.cnt}</b> 笔 · 占本月 <b>${share.toFixed(1)}%</b>`;
+
+function renderFiltered(){
+  const on = selDates.size > 0;
+  const items = selectedItems();
+  const tabsEl = document.getElementById('tabs');
+  const qEl = document.getElementById('q');
+  if(!on){
+    tabsEl.style.display = ''; qEl.style.display = '';
+    renderRank(); renderTable();
+    return;
+  }
+  tabsEl.style.display = 'none'; qEl.style.display = 'none';
+  document.getElementById('cityGoal').textContent = '已选 ' + selDates.size + ' 天';
+  if(!items.length){
+    document.getElementById('cityRank').innerHTML = '<div class="empty">所选日期暂无冲锋数据</div>';
+    document.getElementById('supRank').innerHTML = '<div class="empty">所选日期暂无冲锋数据</div>';
+    document.getElementById('tbl').innerHTML = '<tbody><tr><td class="empty">所选日期暂无冲锋数据</td></tr></tbody>';
+    return;
+  }
+  const cmap={}, smap={}, tmap={};
+  items.forEach(x=>{
+    const cn = x.city || '未知';
+    const sn = x.supervisor || '未知';
+    (cmap[cn]=cmap[cn]||{n:cn,a:0}).a+=x.amount;
+    (smap[sn]=smap[sn]||{n:sn,a:0}).a+=x.amount;
+    (tmap[x.store]=tmap[x.store]||{n:x.store,c:cn,s:sn,a:0,cnt:0});
+    tmap[x.store].a+=x.amount; tmap[x.store].cnt+=1;
+  });
+  const cities=Object.values(cmap).sort((a,b)=>b.a-a.a);
+  const sups=Object.values(smap).sort((a,b)=>b.a-a.a).slice(0,10);
+  const stores=Object.values(tmap).sort((a,b)=>b.a-a.a);
+  const cmax=Math.max(1,...cities.map(c=>c.a));
+  const smax=Math.max(1,...sups.map(s=>s.a));
+  document.getElementById('cityRank').innerHTML = cities.map(c=>
+    '<div class="rank"><div class="nm" title="' + esc(c.n) + '">' + esc(c.n) + '</div>' +
+    '<div class="track"><div class="t" style="width:' + (c.a/cmax*100) + '%"></div></div>' +
+    '<div class="vv" style="color:var(--today)">' + wan(c.a) + '</div></div>').join('');
+  document.getElementById('supRank').innerHTML = sups.map(s=>
+    '<div class="rank"><div class="nm" title="' + esc(s.n) + '">' + esc(s.n) + '</div>' +
+    '<div class="track"><div class="t" style="width:' + (s.a/smax*100) + '%"></div></div>' +
+    '<div class="vv" style="color:var(--today)">' + wan(s.a) + '</div></div>').join('');
+  const top = stores.slice(0,10);
+  const sumAmt = stores.reduce((s,x)=>s+x.a,0);
+  const sumCnt = items.length;
+  document.getElementById('tbl').innerHTML =
+    '<thead><tr><th></th><th>门店</th><th>城市</th><th>督导</th><th class="r">笔数</th><th class="r">实付金额</th></tr></thead><tbody>' +
+    top.map((r,i)=>'<tr><td class="nm">' + (i+1) + '</td><td class="nm">' + esc(r.n) + '</td><td>' + esc(r.c) + '</td><td>' + esc(r.s) + '</td><td class="r">' + r.cnt + '</td><td class="r money" style="color:var(--today)">' + fmt(r.a) + '</td></tr>').join('') +
+    '<tr class="sumrow"><td colspan="4">已选 ' + selDates.size + ' 天 · 前 ' + top.length + ' 门店 · 共 ' + stores.length + ' 家</td><td class="r">' + sumCnt + '</td><td class="r" style="color:var(--today)">' + fmt(sumAmt) + '</td></tr></tbody>';
 }
+
+document.getElementById('dateChips').addEventListener('click', e=>{
+  const c = e.target.closest('.dchip'); if(!c) return;
+  const d = c.dataset.d;
+  if(selDates.has(d)) selDates.delete(d); else selDates.add(d);
+  renderDateChips();
+});
+document.getElementById('dfAll').addEventListener('click', ()=>{ selDates = new Set(allDates); renderDateChips(); });
+document.getElementById('dfToday').addEventListener('click', ()=>{ selDates = new Set([TODAY_MM]); renderDateChips(); });
+document.getElementById('dfClear').addEventListener('click', ()=>{ selDates = new Set(); renderDateChips(); });
+
+(function(){
+  const lastWithData = [...D.daily].reverse().find(d=>d.amount>0);
+  const def = lastWithData ? lastWithData.date : (allDates[allDates.length-1]||'');
+  if(def) selDates = new Set([def]);
+  renderDateChips();
+})();
 </script>
 </body>
 </html>
