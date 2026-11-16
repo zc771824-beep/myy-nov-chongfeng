@@ -186,6 +186,11 @@ tr.sumrow td.hl{background:#E3F0ED !important}
 .df-actions{display:flex;gap:6px}
 .df-actions button{border:0;background:#EFF4F3;padding:6px 13px;border-radius:8px;font-size:12px;color:var(--sub);cursor:pointer;font-weight:550;font-family:inherit;transition:.12s}
 .df-actions button:hover{color:var(--brand)}
+#dayCard{overflow:visible;z-index:40}
+.daypick-btn{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
+.daypick-btn:hover{background:var(--today);color:#fff}
+.daypicker{position:absolute;top:100%;left:0;margin-top:8px;width:360px;max-width:88vw;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px -10px rgba(16,40,38,.3);padding:14px;display:none;z-index:60}
+.daypicker.show{display:block}
 </style>
 </head>
 <body>
@@ -214,18 +219,6 @@ tr.sumrow td.hl{background:#E3F0ED !important}
 </div>
 
 <section class="kpis" id="kpis"></section>
-
-<div class="card" id="dateFilterCard" style="margin-bottom:14px;border:1px solid var(--brand-mid)">
-  <div class="thead">
-    <h2>按日期多选 <span class="hint">点击日期切换，下方城市/督导/门店实时联动</span></h2>
-    <div class="df-actions">
-      <button id="dfAll">全选</button>
-      <button id="dfToday">今日</button>
-      <button id="dfClear">清除</button>
-    </div>
-  </div>
-  <div class="date-chips" id="dateChips"></div>
-</div>
 
 
 <div class="grid g2">
@@ -322,6 +315,15 @@ document.getElementById('kpis').innerHTML = `
    <div class="lab">每日冲锋 <span class="tag" id="dayTag">—</span></div>
    <div class="val" style="color:var(--today)" id="dayVal">—</div>
    <div class="foot" id="dayFoot">—</div>
+   <button class="daypick-btn" id="dayPickBtn" onclick="toggleDayPicker()">选日期 ▾</button>
+   <div class="daypicker" id="dayPicker">
+     <div class="df-actions">
+       <button id="dfAll">全选</button>
+       <button id="dfToday">今日</button>
+       <button id="dfClear">清除</button>
+     </div>
+     <div class="date-chips" id="dateChips"></div>
+   </div>
  </div>
  <div class="kpi">
    <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
@@ -559,7 +561,7 @@ function selectedItems(){
 
 function updateDayCard(){
   const n = selDates.size;
-  document.getElementById('dayTag').textContent = n ? ('已选' + n + '天') : '—';
+  document.getElementById('dayTag').textContent = n===0 ? '—' : (n===1 ? [...selDates][0] : ('已选' + n + '天'));
   const items = selectedItems();
   const amt = items.reduce((s,x)=>s+x.amount,0);
   document.getElementById('dayVal').textContent = fmt(amt);
@@ -639,6 +641,14 @@ document.getElementById('dfClear').addEventListener('click', ()=>{ selDates = ne
   if(def) selDates = new Set([def]);
   renderDateChips();
 })();
+
+function toggleDayPicker(){
+  const p = document.getElementById('dayPicker');
+  const b = document.getElementById('dayPickBtn');
+  if(!p) return;
+  const show = p.classList.toggle('show');
+  if(b) b.textContent = show ? '选日期 ▴' : '选日期 ▾';
+}
 </script>
 </body>
 </html>
