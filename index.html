@@ -181,6 +181,7 @@ tr.sumrow td.hl{background:#E3F0ED !important}
 }
 .btn3d{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s}
 .btn3d:hover{background:var(--today);color:#fff}
+.day-sel{margin-top:12px;width:100%;border:1px solid var(--today);background:var(--today-soft);color:var(--today);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;outline:none}
 </style>
 </head>
 <body>
@@ -309,10 +310,11 @@ document.getElementById('kpis').innerHTML = `
    <div class="val" style="color:var(--today)">${K.today_stores}<small>家</small></div>
    <div class="foot">场均 <b>${fmt(K.today_total/K.today_stores)}</b> · 本月场均 <b>${fmt(avgPerStore)}</b></div>
  </div>
- <div class="kpi t">
-   <div class="lab">昨日已冲锋 <span class="tag">${K.yesterday_date||''}</span></div>
-   <div class="val" style="color:var(--today)">${fmt(K.yesterday_total||0)}</div>
-   <div class="foot">录入 <b>${K.yesterday_rows||0}</b> 笔 · 占本月 <b>${yesterdayShare.toFixed(1)}%</b></div>
+ <div class="kpi t" id="dayCard">
+   <div class="lab">每日冲锋 <span class="tag" id="dayTag">—</span></div>
+   <div class="val" style="color:var(--today)" id="dayVal">—</div>
+   <div class="foot" id="dayFoot">—</div>
+   <select id="daySel" class="day-sel" onchange="pickDay()"></select>
  </div>
  <div class="kpi">
    <div class="lab">本月目标完成率 <span class="tag">总目标</span></div>
@@ -606,6 +608,25 @@ function toggle3d(){
   const show = card.style.display === 'none';
   card.style.display = show ? '' : 'none';
   if(btn) btn.textContent = show ? '近三日冲锋 ▴' : '近三日冲锋 ▾';
+}
+
+/* ---- 每日冲锋：选日期查看 ---- */
+if (D.daily && D.daily.length) {
+  const daySel = document.getElementById('daySel');
+  const sorted = [...D.daily].sort((a,b)=> a.date.localeCompare(b.date));
+  daySel.innerHTML = sorted.map(d=>`<option value="${d.date}">${d.date}</option>`).join('');
+  const yest = (K.yesterday_date||'') || sorted[sorted.length-1].date;
+  daySel.value = sorted.some(d=>d.date===yest) ? yest : sorted[sorted.length-1].date;
+  pickDay();
+}
+function pickDay(){
+  const daySel = document.getElementById('daySel');
+  const it = D.daily.find(x=>x.date===daySel.value);
+  if(!it) return;
+  document.getElementById('dayTag').textContent = it.date;
+  document.getElementById('dayVal').textContent = fmt(it.amount);
+  const share = grandTotal ? (it.amount/grandTotal*100) : 0;
+  document.getElementById('dayFoot').innerHTML = `录入 <b>${it.cnt}</b> 笔 · 占本月 <b>${share.toFixed(1)}%</b>`;
 }
 </script>
 </body>
